@@ -39,12 +39,22 @@ public:
         ESP_LOGI(log_tag, "led_indicator_task: task created");
     }
 
-    ~led_indicator_task()
+    led_indicator_task(led_indicator_task const&) = delete;
+    led_indicator_task& operator=(led_indicator_task const&) = delete;
+
+    void print_stack_info()
     {
         if(task_handle != nullptr)
         {
             uint32_t stack_words_extra = uxTaskGetStackHighWaterMark2(task_handle);
             ESP_LOGI(log_tag, "led_indicator_task has %lu extra stack words", stack_words_extra);
+        }
+    }
+
+    ~led_indicator_task()
+    {
+        if(task_handle != nullptr)
+        {
             vTaskDelete(task_handle);
         }
     }
@@ -73,20 +83,19 @@ private:
             {
             case led_indicator_code::idle:
                 gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_GREEN_GPIO_PIN), 1);
-                vTaskDelay(100 / portTICK_PERIOD_MS);
+                vTaskDelay(50 / portTICK_PERIOD_MS);
                 gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_GREEN_GPIO_PIN), 0);
-                vTaskDelay(500 / portTICK_PERIOD_MS);
+                vTaskDelay(50 / portTICK_PERIOD_MS);
+                gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_GREEN_GPIO_PIN), 1);
+                vTaskDelay(50 / portTICK_PERIOD_MS);
+                gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_GREEN_GPIO_PIN), 0);
+                vTaskDelay(850 / portTICK_PERIOD_MS);
                 break;
 
             case led_indicator_code::wakeup:
                 ESP_LOGI(log_tag, "wakeup");
-                for(int i = 0; i < 5; i++)
-                {
-                    gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_GREEN_GPIO_PIN), 1);
-                    vTaskDelay(100 / portTICK_PERIOD_MS);
-                    gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_GREEN_GPIO_PIN), 0);
-                    vTaskDelay(100 / portTICK_PERIOD_MS);
-                }
+                gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_GREEN_GPIO_PIN), 1);
+                vTaskDelay(1000 / portTICK_PERIOD_MS);
                 vTaskDelay(1000 / portTICK_PERIOD_MS);
                 break;
 

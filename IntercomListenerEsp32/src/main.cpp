@@ -5,11 +5,15 @@
 #include "esp_wifi.h"
 #include "esp_log.h"
 #include "led_indicator_task.hpp"
+// #include "wifi.hpp"
 #include <memory>
+#include "nvs_flash.h"
+
+extern "C" void wifi_init_sta(void);
 
 static const char* MAIN_LOG_TAG = "Main";
 
-led_indicator_task led_indicator = led_indicator_task();
+led_indicator_task led_indicator;
 
 void enter_deep_sleep()
 {
@@ -48,10 +52,20 @@ void on_wake()
 
 extern "C" void app_main() 
 {
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
+    {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+    ESP_LOGI(MAIN_LOG_TAG, "nvs_flash_init called");
+    esp_netif_init();
+    ESP_LOGI(MAIN_LOG_TAG, "esp_netif_init called");
+
     on_wake();
 
-    ESP_LOGI(MAIN_LOG_TAG, "Using WiFi settings: SSID: %s, Password: %s", CONFIG_INTERCOM_WIFI_SSID, CONFIG_INTERCOM_WIFI_PASSWORD);
-
+    wifi_init_sta();
+    
 #ifdef CONFIG_INTERCOM_DEEP_SLEEP_ENABLED
     enter_deep_sleep();
 #else
@@ -59,6 +73,7 @@ extern "C" void app_main()
     {
         vTaskDelay(5000 / portTICK_PERIOD_MS);
         ESP_LOGI(MAIN_LOG_TAG, "Heartbeat");
+        led_indicator.print_stack_info();
         // ESP_LOGI(MAIN_LOG_TAG, "Heartbeat");
     }
 #endif
