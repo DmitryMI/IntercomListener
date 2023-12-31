@@ -1,0 +1,39 @@
+mainmenu "Intercom Listener"
+    
+    config INTERCOM_WIFI_SSID
+        string "WiFi SSID"
+
+    config INTERCOM_WIFI_PASSWORD
+        string "WiFi Password"
+
+    config INTERCOM_DEEP_SLEEP_ENABLED
+        bool "Deep sleep enabled"
+        default true
+
+    config INTERCOM_RING_GPIO_PIN
+        int
+        default 33
+
+    config INTERCOM_WAKE_LEVEL
+        int
+        default 1
+
+    config INTERCOM_DEEP_SLEEP_TIMER_ENABLED
+        bool "Deep sleep timer wake up"
+        default true
+
+    config INTERCOM_DEEP_SLEEP_TIMER_PERIOD
+        int "Wake up timer period in seconds" 
+        default 10
+
+    config INTERCOM_LED_BLUE_GPIO_PIN
+        int "Blue LED GPIO Pin"
+        default 4
+
+    config INTERCOM_LED_GREEN_GPIO_PIN
+        int "Green LED GPIO Pin"
+        default 2
+    
+    config INTERCOM_LED_RED_GPIO_PIN
+        int "Red LED GPIO Pin"
+        default 0

@@ -1,0 +1,10 @@
+.pioenvs
+.piolibdeps
+.clang_complete
+.gcc-flags.json
+.pio
+sdkconfig.*
+IntercomListenerEsp32/test/README
+IntercomListenerEsp32/include/README
+IntercomListenerEsp32/lib/README
+IntercomListenerEsp32/.vscode/extensions.json
