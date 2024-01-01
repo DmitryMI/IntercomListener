@@ -8,13 +8,15 @@
 // #include "wifi.hpp"
 #include <memory>
 #include "nvs_flash.h"
+#include "timer.hpp"
 
-extern "C" void wifi_init_sta(void);
+extern "C" bool wifi_init_sta(void);
 
 static const char* MAIN_LOG_TAG = "Main";
 
 led_indicator_task led_indicator;
 
+#ifdef CONFIG_INTERCOM_DEEP_SLEEP_ENABLED
 void enter_deep_sleep()
 {
     ESP_LOGI(MAIN_LOG_TAG, "Preparing for deep-sleep...");
@@ -29,26 +31,7 @@ void enter_deep_sleep()
     ESP_LOGI(MAIN_LOG_TAG, "Sleeping...");
     esp_deep_sleep_start();
 }
-
-void on_wake()
-{
-    esp_sleep_source_t wakeup_reason = esp_sleep_get_wakeup_cause();
-
-    if(wakeup_reason == ESP_SLEEP_WAKEUP_EXT0)
-    {
-        ESP_LOGI(MAIN_LOG_TAG, "Wake up by EXT0");
-    }
-    else if(wakeup_reason == ESP_SLEEP_WAKEUP_TIMER)
-    {
-        ESP_LOGI(MAIN_LOG_TAG, "Wake up by TIMER");
-    }
-    else
-    {
-        ESP_LOGI(MAIN_LOG_TAG, "Power-up or unexpected wake up source");
-    }
-
-    led_indicator.set_code(led_indicator_code::wakeup);
-}
+#endif
 
 extern "C" void app_main() 
 {
@@ -62,19 +45,50 @@ extern "C" void app_main()
     esp_netif_init();
     ESP_LOGI(MAIN_LOG_TAG, "esp_netif_init called");
 
-    on_wake();
+    esp_sleep_source_t wakeup_reason = esp_sleep_get_wakeup_cause();
 
-    wifi_init_sta();
-    
-#ifdef CONFIG_INTERCOM_DEEP_SLEEP_ENABLED
-    enter_deep_sleep();
-#else
+    if(wakeup_reason == ESP_SLEEP_WAKEUP_EXT0)
+    {
+        ESP_LOGI(MAIN_LOG_TAG, "Wake up by EXT0");
+        // TODO Send notification
+    }
+    else if(wakeup_reason == ESP_SLEEP_WAKEUP_TIMER)
+    {
+        ESP_LOGI(MAIN_LOG_TAG, "Wake up by TIMER");
+    }
+    else
+    {
+        ESP_LOGI(MAIN_LOG_TAG, "Power-up or unexpected wake up source");
+    }
+
+    bool wifi_ok = wifi_init_sta();
+    if(!wifi_ok)
+    {
+        led_indicator.set_code(led_indicator_code::wifi_error);
+    }
+    else
+    {
+
+    }
+
+    timer_setup(30);
+
     while(1)
     {
-        vTaskDelay(5000 / portTICK_PERIOD_MS);
-        ESP_LOGI(MAIN_LOG_TAG, "Heartbeat");
-        led_indicator.print_stack_info();
-        // ESP_LOGI(MAIN_LOG_TAG, "Heartbeat");
-    }
+        timer_event timer_event;
+        bool alarm_received = xQueueReceive(timer_queue, &timer_event, 10000 / portTICK_PERIOD_MS);
+        if(alarm_received)
+        {
+            ESP_LOGI(MAIN_LOG_TAG, "Timer event received. Group: %d, index: %d, counter value: %llu, time: %llu", 
+                (int)timer_event.info.timer_group, (int)timer_event.info.timer_idx, timer_event.timer_counter_value, timer_event.timer_time_seconds);
+
+#ifdef CONFIG_INTERCOM_DEEP_SLEEP_ENABLED
+            enter_deep_sleep();
 #endif
+        }
+        else
+        {
+            ESP_LOGI(MAIN_LOG_TAG, "Heartbeat.");
+        }
+    }
 }

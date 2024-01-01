@@ -22,7 +22,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     }
 }
 
-void wifi_init_sta(void)
+bool wifi_init_sta(void)
 {
     s_wifi_event_group = xEventGroupCreate();
 
@@ -83,6 +83,7 @@ void wifi_init_sta(void)
     {
         ESP_LOGI(TAG, "connected to ap SSID:%s password:%s",
                  CONFIG_INTERCOM_WIFI_SSID, CONFIG_INTERCOM_WIFI_PASSWORD);
+        return true;
     } else if (bits & WIFI_FAIL_BIT) 
     {
         ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s",
@@ -91,4 +92,6 @@ void wifi_init_sta(void)
     {
         ESP_LOGE(TAG, "UNEXPECTED EVENT");
     }
+
+    return false;
 }
