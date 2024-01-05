@@ -28,13 +28,19 @@ public:
     {
         ESP_LOGI(log_tag, "led_indicator_task ctor called");
 
+#if CONFIG_INTERCOM_LED_GREEN_GPIO_PIN >= 0
         gpio_set_direction(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_GREEN_GPIO_PIN), GPIO_MODE_OUTPUT);
-        gpio_set_direction(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_RED_GPIO_PIN), GPIO_MODE_OUTPUT);
-        gpio_set_direction(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_BLUE_GPIO_PIN), GPIO_MODE_OUTPUT);
-
         gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_GREEN_GPIO_PIN), 0);
+#endif
+#if CONFIG_INTERCOM_LED_RED_GPIO_PIN >= 0
+        gpio_set_direction(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_RED_GPIO_PIN), GPIO_MODE_OUTPUT);
         gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_RED_GPIO_PIN), 0);
+#endif
+#if CONFIG_INTERCOM_LED_BLUE_GPIO_PIN >= 0
+        gpio_set_direction(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_BLUE_GPIO_PIN), GPIO_MODE_OUTPUT);
         gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_BLUE_GPIO_PIN), 0);
+#endif
+
         xTaskCreate(led_indicator_task_routine, "led_indicator_task", 1024, this, tskIDLE_PRIORITY, &task_handle);
         ESP_LOGI(log_tag, "led_indicator_task: task created");
     }
@@ -82,6 +88,7 @@ private:
             switch (task->current_code)
             {
             case led_indicator_code::idle:
+#if CONFIG_INTERCOM_LED_GREEN_GPIO_PIN >= 0
                 gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_GREEN_GPIO_PIN), 1);
                 vTaskDelay(50 / portTICK_PERIOD_MS);
                 gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_GREEN_GPIO_PIN), 0);
@@ -89,18 +96,23 @@ private:
                 gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_GREEN_GPIO_PIN), 1);
                 vTaskDelay(50 / portTICK_PERIOD_MS);
                 gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_GREEN_GPIO_PIN), 0);
+#endif
                 vTaskDelay(850 / portTICK_PERIOD_MS);
+            
                 break;
 
             case led_indicator_code::wakeup:
                 ESP_LOGI(log_tag, "wakeup");
+#if CONFIG_INTERCOM_LED_GREEN_GPIO_PIN >= 0
                 gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_GREEN_GPIO_PIN), 1);
                 vTaskDelay(1000 / portTICK_PERIOD_MS);
                 vTaskDelay(1000 / portTICK_PERIOD_MS);
+#endif
                 break;
 
             case led_indicator_code::wifi_error:
                 ESP_LOGI(log_tag, "wifi_error");
+#if CONFIG_INTERCOM_LED_RED_GPIO_PIN >= 0
                 gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_RED_GPIO_PIN), 1);
                 vTaskDelay(500 / portTICK_PERIOD_MS);
                 gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_RED_GPIO_PIN), 0);
@@ -112,11 +124,13 @@ private:
                     gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_RED_GPIO_PIN), 0);
                     vTaskDelay(100 / portTICK_PERIOD_MS);
                 }
+#endif
                 vTaskDelay(1000 / portTICK_PERIOD_MS);
                 break;
 
             case led_indicator_code::http_error:
                 ESP_LOGI(log_tag, "http_error");
+#if CONFIG_INTERCOM_LED_RED_GPIO_PIN >= 0
                 gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_RED_GPIO_PIN), 1);
                 vTaskDelay(500 / portTICK_PERIOD_MS);
                 gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_RED_GPIO_PIN), 0);
@@ -128,14 +142,17 @@ private:
                     gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_RED_GPIO_PIN), 0);
                     vTaskDelay(100 / portTICK_PERIOD_MS);
                 }
+#endif
                 vTaskDelay(1000 / portTICK_PERIOD_MS);
                 break;
 
             case led_indicator_code::unknown_error:
                 ESP_LOGI(log_tag, "unknown_error");
+#if CONFIG_INTERCOM_LED_RED_GPIO_PIN >= 0
                 gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_RED_GPIO_PIN), 1);
                 vTaskDelay(2000 / portTICK_PERIOD_MS);
                 gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_RED_GPIO_PIN), 0);
+#endif
                 vTaskDelay(1000 / portTICK_PERIOD_MS);
                 task->current_code = led_indicator_code::idle;
                 break;    

@@ -6,8 +6,15 @@
 #include "freertos/queue.h"
 #include "driver/timer.h"
 #include "soc/rtc.h"
+#include "events.h"
+#include "log_level.h"
 
 #define TIMER_DIVIDER         (16)  //  Hardware timer clock divider
+
+static const char* timer_log_tag = "timer";
+
+EventGroupHandle_t timer_event_group;
+
 
 uint32_t get_apb_freq()
 {
@@ -22,37 +29,19 @@ struct timer_info
     bool auto_reload;
 };
 
-/**
- * @brief A sample structure to pass events from the timer ISR to task
- *
- */
-struct timer_event
- {
-    timer_info info;
-    uint64_t timer_counter_value;
-    uint64_t timer_time_seconds;
-};
-
-QueueHandle_t timer_queue;
-
 bool IRAM_ATTR timer_group_isr_callback(void *args)
 {
     BaseType_t high_task_awoken = pdFALSE;
-    timer_info *info = static_cast<timer_info*>(args);
 
-    uint64_t timer_counter_value = timer_group_get_counter_value_in_isr(info->timer_group, info->timer_idx);
-    const uint32_t timer_scale = rtc_clk_apb_freq_get() / TIMER_DIVIDER;
-    timer_event evt = {};
-    evt.timer_counter_value = timer_counter_value;
-    evt.timer_time_seconds = timer_counter_value / timer_scale; 
-    evt.info.timer_group = info->timer_group;
-    evt.info.timer_idx = info->timer_idx;
-    evt.info.auto_reload = info->timer_group;
-    evt.info.alarm_interval = info->alarm_interval;
+    //xQueueSendFromISR(timer_queue, &evt, &high_task_awoken);
+    int higherPriorityTaskWoken = false;
+    int result = xEventGroupSetBitsFromISR(timer_event_group, EVENT_TIMER_ALARM, &higherPriorityTaskWoken);
+    if(result != pdFAIL)
+    {
+        portYIELD_FROM_ISR(higherPriorityTaskWoken);
+    }
 
-    xQueueSendFromISR(timer_queue, &evt, &high_task_awoken);
-
-    return high_task_awoken == pdTRUE; // return whether we need to yield at the end of ISR
+    return high_task_awoken == pdTRUE;
 }
 
 void timer_reset()
@@ -62,13 +51,15 @@ void timer_reset()
     timer_set_counter_value(group, index, 0);
 }
 
-void timer_setup(int timer_interval_sec)
+void timer_setup(int timer_interval_sec, EventGroupHandle_t event_group_handle)
 {
+    esp_log_level_set(timer_log_tag, INTERCOM_LOG_LEVEL);    
+
+    timer_event_group = event_group_handle;
+
     const auto group = timer_group_t::TIMER_GROUP_0;
     const auto index = timer_idx_t::TIMER_0;
     const auto reload = timer_autoreload_t::TIMER_AUTORELOAD_DIS;
-
-    timer_queue = xQueueCreate(10, sizeof(timer_event));
 
     /* Select and initialize basic parameters of the timer */
     timer_config_t config = {};

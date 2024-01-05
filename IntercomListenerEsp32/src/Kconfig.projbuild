@@ -5,33 +5,74 @@ menu "IntercomListener General"
         default true
 
     config INTERCOM_RING_GPIO_PIN
-        int
+        int "Ring sensor pin"
         default 33
 
+    config INTERCOM_RING_DETECTION_COOLDOWN
+        int "Ring detection cooldown in milliseconds"
+        default 1000
+
+    config INTERCOM_RING_NOTIFICATION_COOLDOWN
+        int "Ring notification cooldown in milliseconds"
+        default 5000
+
     config INTERCOM_WAKE_LEVEL
-        int
-        default 1
+        int "Ring sensor pin level that wakes the MCU"
+        default 0
 
-    config INTERCOM_DEEP_SLEEP_TIMER_ENABLED
-        bool "Deep sleep timer wake up"
-        default true
+    choice INTERCOM_LOG_LEVEL
+        prompt "Log level for the application"
+        default INTERCOM_LOG_LEVEL_INFO
+        help
+            Select log level for the application code. Other Framework components will follow CONFIG_LOG_DEFAULT_LEVEL setting.
+        config INTERCOM_LOG_LEVEL_ERROR
+            bool "Error"
+        config INTERCOM_LOG_LEVEL_WARNING
+            bool "Warning"
+        config INTERCOM_LOG_LEVEL_INFO
+            bool "Info"
+        config INTERCOM_LOG_LEVEL_DEBUG
+            bool "Debug"
+        config INTERCOM_LOG_LEVEL_VERBOSE
+            bool "Verbose"
+    endchoice
 
-    config INTERCOM_DEEP_SLEEP_TIMER_PERIOD
+    config INTERCOM_DEEP_SLEEP_DELAY
+        int "MCU will go to sleep if inactive during this time" 
+        default 30
+
+    config INTERCOM_DEEP_SLEEP_DURATION_ENABLED
+        bool "Deep sleep auto wake up"
+        default false
+
+    config INTERCOM_DEEP_SLEEP_DURATION
         int "Wake up timer period in seconds" 
-        default 10
+        default 120
 
     config INTERCOM_LED_BLUE_GPIO_PIN
-        int "Blue LED GPIO Pin"
+        int "Blue LED GPIO Pin. -1 to disable."
         default 4
 
     config INTERCOM_LED_GREEN_GPIO_PIN
-        int "Green LED GPIO Pin"
+        int "Green LED GPIO Pin. -1 to disable."
         default 2
     
     config INTERCOM_LED_RED_GPIO_PIN
-        int "Red LED GPIO Pin"
+        int "Red LED GPIO Pin. -1 to disable."
         default 0
 
+endmenu
+
+menu "IntercomListener Telegram Notifications"
+    config INTERCOM_TELEGRAM_ENABLED
+        bool "Are Telegram notifications enabled"
+        default true
+
+    config INTERCOM_TELEGRAM_API_KEY
+        string "Telegram Bot API key"
+    
+    config INTERCOM_TELEGRAM_CHAT_ID
+        string "Telegram chat id"
 endmenu
 
 menu "IntercomListener WiFi"
