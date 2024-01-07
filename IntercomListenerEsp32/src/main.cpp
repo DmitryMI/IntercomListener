@@ -28,10 +28,33 @@ int64_t ring_notification_timestamp = -1;
 bool ring_notification_pending = false;
 
 #ifdef CONFIG_INTERCOM_DEEP_SLEEP_ENABLED
+
+extern const uint8_t ulp_main_bin_start[] asm("_binary_ulp_main_bin_start");
+extern const uint8_t ulp_main_bin_end[]   asm("_binary_ulp_main_bin_end");
+
+#if CONFIG_ULP_COPROC_ENABLED
+void init_ulp()
+{
+    ESP_LOGI(main_log_tag, "init_ulp called");
+    esp_err_t err = ulp_load_binary(0, ulp_main_bin_start, (ulp_main_bin_end - ulp_main_bin_start) / sizeof(uint32_t));
+    ESP_ERROR_CHECK(err);
+
+    ulp_set_wakeup_period(0, 5 * 1000 * 1000);
+    err = ulp_run(&ulp_entry - RTC_SLOW_MEM);
+    ESP_ERROR_CHECK(err);
+    ESP_LOGI(main_log_tag, "ulp_run called");
+}
+#endif
+
 void enter_deep_sleep()
 {
     ESP_LOGI(main_log_tag, "Preparing for deep-sleep...");
     wifi_deinit_and_stop();
+
+#if CONFIG_ULP_COPROC_ENABLED
+    init_ulp();
+#endif
+
     esp_sleep_enable_ext0_wakeup(static_cast<gpio_num_t>(CONFIG_INTERCOM_RING_GPIO_PIN), CONFIG_INTERCOM_WAKE_LEVEL);
 
 #ifdef CONFIG_INTERCOM_DEEP_SLEEP_DURATION_ENABLED
@@ -71,7 +94,7 @@ void setup_ring_sensor()
     ESP_ERROR_CHECK(gpio_set_direction(ring_in, gpio_mode_t::GPIO_MODE_INPUT));
 
     int current_level = gpio_get_level(ring_in);
-    ESP_LOGI(main_log_tag, "Current level of GPIO %d: %d", CONFIG_INTERCOM_RING_GPIO_PIN, current_level);
+    ESP_LOGD(main_log_tag, "Current level of GPIO %d: %d", CONFIG_INTERCOM_RING_GPIO_PIN, current_level);
 
     ESP_ERROR_CHECK(gpio_set_intr_type(ring_in, gpio_int_type_t::GPIO_INTR_ANYEDGE));
     ESP_ERROR_CHECK(gpio_intr_enable(ring_in));
@@ -81,7 +104,7 @@ void setup_ring_sensor()
 
 void send_ring_notification()
 {
-    ESP_LOGI(main_log_tag, "send_ring_notification called");
+    ESP_LOGD(main_log_tag, "send_ring_notification called");
 
 #ifdef CONFIG_INTERCOM_TELEGRAM_ENABLED
     int status_code = telegram_send_notification("Door ring!");
@@ -96,6 +119,9 @@ void send_ring_notification()
 extern "C" void app_main() 
 {
     esp_log_level_set(main_log_tag, INTERCOM_LOG_LEVEL);
+    // rtc_gpio_deinit(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_RED_GPIO_PIN));
+    // rtc_gpio_deinit(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_GREEN_GPIO_PIN));
+    // rtc_gpio_deinit(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_BLUE_GPIO_PIN));
 
     main_event_group = xEventGroupCreate();
 
@@ -157,13 +183,14 @@ extern "C" void app_main()
 
         if((event_bits & EVENT_WIFI_FAIL) == EVENT_WIFI_FAIL)
         {
-            ESP_LOGI(main_log_tag, "wifi failed to connect");
+            ESP_LOGE(main_log_tag, "wifi failed to connect");
             wifi_connected = false;
         }
 
         if((event_bits & EVENT_RING_SENSOR_START) == EVENT_RING_SENSOR_START)
         {
             ESP_LOGD(main_log_tag, "Ring start detected!");
+            timer_reset(CONFIG_INTERCOM_DEEP_SLEEP_DELAY);
             int64_t timestamp = esp_timer_get_time();
             if(ring_sensor_timestamp == -1 || (timestamp - ring_sensor_timestamp > CONFIG_INTERCOM_RING_DETECTION_COOLDOWN * 1000LL))
             {
@@ -194,9 +221,18 @@ extern "C" void app_main()
         if((event_bits & EVENT_TIMER_ALARM) == EVENT_TIMER_ALARM)
         {
             ESP_LOGI(main_log_tag, "sleep timer expired");
+            int ring_level = gpio_get_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_RING_GPIO_PIN));
+            if(ring_level == CONFIG_INTERCOM_WAKE_LEVEL)
+            {
+                ESP_LOGW(main_log_tag, "Ring sensor still at level %d. Extending timer.", ring_level);
+                timer_reset(CONFIG_INTERCOM_DEEP_SLEEP_DELAY);
+            }
+            else
+            {
 #if CONFIG_INTERCOM_DEEP_SLEEP_ENABLED
             enter_deep_sleep();
 #endif
+            }
         }
     }
 }

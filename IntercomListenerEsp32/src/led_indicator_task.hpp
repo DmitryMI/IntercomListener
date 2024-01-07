@@ -26,7 +26,7 @@ private:
 public:
     led_indicator_task()
     {
-        ESP_LOGI(log_tag, "led_indicator_task ctor called");
+        ESP_LOGD(log_tag, "led_indicator_task ctor called");
 
 #if CONFIG_INTERCOM_LED_GREEN_GPIO_PIN >= 0
         gpio_set_direction(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_GREEN_GPIO_PIN), GPIO_MODE_OUTPUT);
@@ -42,7 +42,7 @@ public:
 #endif
 
         xTaskCreate(led_indicator_task_routine, "led_indicator_task", 1024, this, tskIDLE_PRIORITY, &task_handle);
-        ESP_LOGI(log_tag, "led_indicator_task: task created");
+        ESP_LOGD(log_tag, "led_indicator_task: task created");
     }
 
     led_indicator_task(led_indicator_task const&) = delete;
@@ -53,7 +53,7 @@ public:
         if(task_handle != nullptr)
         {
             uint32_t stack_words_extra = uxTaskGetStackHighWaterMark2(task_handle);
-            ESP_LOGI(log_tag, "led_indicator_task has %lu extra stack words", stack_words_extra);
+            ESP_LOGD(log_tag, "led_indicator_task has %lu extra stack words", stack_words_extra);
         }
     }
 
@@ -68,7 +68,7 @@ public:
     void set_code(led_indicator_code code)
     {
         pending_code = code;
-        ESP_LOGI(log_tag, "set_code: %d", static_cast<int>(code));
+        ESP_LOGD(log_tag, "set_code: %d", static_cast<int>(code));
     }
 
 private:
@@ -102,7 +102,7 @@ private:
                 break;
 
             case led_indicator_code::wakeup:
-                ESP_LOGI(log_tag, "wakeup");
+                ESP_LOGD(log_tag, "wakeup");
 #if CONFIG_INTERCOM_LED_GREEN_GPIO_PIN >= 0
                 gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_GREEN_GPIO_PIN), 1);
                 vTaskDelay(1000 / portTICK_PERIOD_MS);
@@ -111,7 +111,7 @@ private:
                 break;
 
             case led_indicator_code::wifi_error:
-                ESP_LOGI(log_tag, "wifi_error");
+                ESP_LOGD(log_tag, "wifi_error");
 #if CONFIG_INTERCOM_LED_RED_GPIO_PIN >= 0
                 gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_RED_GPIO_PIN), 1);
                 vTaskDelay(500 / portTICK_PERIOD_MS);
@@ -129,7 +129,7 @@ private:
                 break;
 
             case led_indicator_code::http_error:
-                ESP_LOGI(log_tag, "http_error");
+                ESP_LOGD(log_tag, "http_error");
 #if CONFIG_INTERCOM_LED_RED_GPIO_PIN >= 0
                 gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_RED_GPIO_PIN), 1);
                 vTaskDelay(500 / portTICK_PERIOD_MS);
@@ -147,7 +147,7 @@ private:
                 break;
 
             case led_indicator_code::unknown_error:
-                ESP_LOGI(log_tag, "unknown_error");
+                ESP_LOGD(log_tag, "unknown_error");
 #if CONFIG_INTERCOM_LED_RED_GPIO_PIN >= 0
                 gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_RED_GPIO_PIN), 1);
                 vTaskDelay(2000 / portTICK_PERIOD_MS);

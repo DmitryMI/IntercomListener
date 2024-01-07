@@ -15,7 +15,6 @@ static const char* timer_log_tag = "timer";
 
 EventGroupHandle_t timer_event_group;
 
-
 uint32_t get_apb_freq()
 {
     return 80000000;
@@ -44,11 +43,14 @@ bool IRAM_ATTR timer_group_isr_callback(void *args)
     return high_task_awoken == pdTRUE;
 }
 
-void timer_reset()
+void timer_reset(int timer_interval_sec)
 {
+    ESP_LOGI(timer_log_tag, "timer_reset called");
     const auto group = timer_group_t::TIMER_GROUP_0;
     const auto index = timer_idx_t::TIMER_0;
-    timer_set_counter_value(group, index, 0);
+
+    ESP_ERROR_CHECK(timer_set_counter_value(group, index, 0));
+    ESP_ERROR_CHECK(timer_set_alarm(group, index, TIMER_ALARM_EN));
 }
 
 void timer_setup(int timer_interval_sec, EventGroupHandle_t event_group_handle)

@@ -83,7 +83,7 @@ bool wifi_init_sta(EventGroupHandle_t event_group_handle)
     wifi_enabled = true;
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    ESP_LOGI(wifi_log_tag, "wifi_init_sta finished.");
+    ESP_LOGD(wifi_log_tag, "wifi_init_sta finished.");
 
     return true;
 }

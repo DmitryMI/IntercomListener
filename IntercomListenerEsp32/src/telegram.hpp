@@ -54,11 +54,11 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
             break;
 
         case HTTP_EVENT_DISCONNECTED:
-            ESP_LOGI(tg_log_tag, "HTTP_EVENT_DISCONNECTED");
+            ESP_LOGD(tg_log_tag, "HTTP_EVENT_DISCONNECTED");
             break;
 
         case HTTP_EVENT_REDIRECT:
-            ESP_LOGI(tg_log_tag, "HTTP_EVENT_REDIRECT");
+            ESP_LOGD(tg_log_tag, "HTTP_EVENT_REDIRECT");
             break;
 
         default:
@@ -73,7 +73,7 @@ int telegram_send_notification(const char* text)
 {
     esp_log_level_set(tg_log_tag, INTERCOM_LOG_LEVEL);    
 
-    ESP_LOGI(tg_log_tag, "telegram_send_notification called");
+    ESP_LOGD(tg_log_tag, "telegram_send_notification called");
     char local_response_buffer[MAX_HTTP_OUTPUT_BUFFER + 1] = {0};
     /**
      * NOTE: All the configuration parameters for http_client must be spefied either in URL or as host and path parameters.
@@ -92,7 +92,7 @@ int telegram_send_notification(const char* text)
     config.transport_type = HTTP_TRANSPORT_OVER_SSL;
 
     esp_http_client_handle_t client = esp_http_client_init(&config);
-    ESP_LOGI(tg_log_tag, "esp_http_client_init called");
+    ESP_LOGD(tg_log_tag, "esp_http_client_init called");
     // POST
     const char* post_data_base = 
         "{" \
