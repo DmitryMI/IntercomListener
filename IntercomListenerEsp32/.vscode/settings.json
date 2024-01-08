@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "cstring": "cpp",
-        "random": "c"
+        "random": "c",
+        "compare": "cpp"
     }
 }

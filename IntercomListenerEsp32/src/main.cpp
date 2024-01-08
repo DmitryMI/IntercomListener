@@ -27,6 +27,10 @@ int64_t ring_sensor_timestamp = -1;
 int64_t ring_notification_timestamp = -1;
 bool ring_notification_pending = false;
 
+#if CONFIG_INTERCOM_BOOT_NOTIFICATION
+bool boot_notification_pending = false;
+#endif
+
 #ifdef CONFIG_INTERCOM_DEEP_SLEEP_ENABLED
 
 extern const uint8_t ulp_main_bin_start[] asm("_binary_ulp_main_bin_start");
@@ -122,6 +126,21 @@ void send_ring_notification()
 
 }
 
+#if CONFIG_INTERCOM_BOOT_NOTIFICATION
+void send_boot_notification()
+{
+    ESP_LOGD(main_log_tag, "send_boot_notification called");
+
+#ifdef CONFIG_INTERCOM_TELEGRAM_ENABLED
+    int status_code = telegram_send_notification("Intercom Listener booted!");
+    if(status_code != 200)
+    {
+        led_indicator.set_code(led_indicator_code::http_error);
+    }
+#endif
+}
+#endif
+
 extern "C" void app_main() 
 {
     esp_log_level_set(main_log_tag, INTERCOM_LOG_LEVEL);
@@ -144,7 +163,7 @@ extern "C" void app_main()
 
     setup_ring_sensor();
     led_indicator.set_code(led_indicator_code::wakeup);
-    
+
     esp_sleep_source_t wakeup_reason = esp_sleep_get_wakeup_cause();
 
     int timer_alarm_time = CONFIG_INTERCOM_DEEP_SLEEP_DELAY;
@@ -175,6 +194,9 @@ extern "C" void app_main()
     else
     {
         ESP_LOGI(main_log_tag, "Power-up or unexpected wake up source");
+#if CONFIG_INTERCOM_BOOT_NOTIFICATION
+        boot_notification_pending = true;
+#endif
     }
 
     if(wifi_should_connect)
@@ -252,6 +274,14 @@ extern "C" void app_main()
             // Clear pending flag, since we don't want deferred notification
             ring_notification_pending = false;
         }
+
+#if CONFIG_INTERCOM_BOOT_NOTIFICATION
+        if(wifi_connected && boot_notification_pending)
+        {
+            send_boot_notification();
+            boot_notification_pending = false;
+        }
+#endif
 
         if((event_bits & EVENT_TIMER_ALARM) == EVENT_TIMER_ALARM)
         {

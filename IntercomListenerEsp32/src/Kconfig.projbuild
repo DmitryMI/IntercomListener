@@ -1,12 +1,12 @@
 menu "IntercomListener General"
     
-    config INTERCOM_DEEP_SLEEP_ENABLED
-        bool "Deep sleep enabled"
-        default true
-
     config INTERCOM_RING_GPIO_PIN
         int "Ring sensor pin"
         default 27
+
+    config INTERCOM_BOOT_NOTIFICATION
+        bool "Notify on startup"
+        default true
 
     choice INTERCOM_RING_GPIO_PIN_PULL
         prompt "Ring sensor pull mode"
@@ -49,6 +49,10 @@ menu "IntercomListener General"
         config INTERCOM_LOG_LEVEL_VERBOSE
             bool "Verbose"
     endchoice
+
+    config INTERCOM_DEEP_SLEEP_ENABLED
+        bool "Deep sleep enabled"
+        default true
 
     config INTERCOM_DEEP_SLEEP_DELAY
         int "Deep sleep delay after ring was detected" 
