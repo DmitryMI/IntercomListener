@@ -1,12 +1,29 @@
 menu "IntercomListener General"
     
-    config INTERCOM_RING_GPIO_PIN
-        int "Ring sensor pin"
-        default 27
-
     config INTERCOM_BOOT_NOTIFICATION
         bool "Notify on startup"
         default true
+
+    config INTERCOM_RING_GPIO_PIN
+        int "Intercom Ring sensor pin"
+        default 27
+
+    config INTERCOM_DOOR_GPIO_PIN
+        int "Door Bell sensor pin"
+        default 26
+
+    choice INTERCOM_DOOR_GPIO_PIN_PULL
+        prompt "Door Bell sensor pull mode"
+        default INTERCOM_DOOR_GPIO_PIN_PULL_DISABLED
+        help
+            Enable internal pull-up or pull-down for Ring sensor pin.
+        config INTERCOM_DOOR_GPIO_PIN_PULL_DISABLED
+            bool "Disabled"
+        config INTERCOM_DOOR_GPIO_PIN_PULL_DOWN
+            bool "Pull-down"
+        config INTERCOM_DOOR_GPIO_PIN_PULL_UP
+            bool "Pull-up"
+    endchoice
 
     choice INTERCOM_RING_GPIO_PIN_PULL
         prompt "Ring sensor pull mode"
@@ -22,11 +39,11 @@ menu "IntercomListener General"
     endchoice
 
     config INTERCOM_RING_DETECTION_COOLDOWN
-        int "Ring detection cooldown in milliseconds"
+        int "Intercom Ring and Door Bell detection cooldown in milliseconds"
         default 1000
 
     config INTERCOM_RING_NOTIFICATION_COOLDOWN
-        int "Ring notification cooldown in milliseconds"
+        int "Intercom Ring and Door Bell notification cooldown in milliseconds"
         default 5000
 
     config INTERCOM_WAKE_LEVEL
