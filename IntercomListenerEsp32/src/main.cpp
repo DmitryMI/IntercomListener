@@ -66,10 +66,13 @@ void enter_deep_sleep()
     
 #if CONFIG_INTERCOM_WAKE_LEVEL == 0
     esp_sleep_enable_ext0_wakeup(static_cast<gpio_num_t>(CONFIG_INTERCOM_RING_GPIO_PIN), CONFIG_INTERCOM_WAKE_LEVEL);
+    ESP_LOGI(main_log_tag, "EXT0 Configured to Ring pin (%d)", CONFIG_INTERCOM_RING_GPIO_PIN);
     esp_sleep_enable_ext1_wakeup(1 << CONFIG_INTERCOM_DOOR_GPIO_PIN, esp_sleep_ext1_wakeup_mode_t::ESP_EXT1_WAKEUP_ALL_LOW);
+    ESP_LOGI(main_log_tag, "EXT1 Configured to Door Bell pin (%d)", CONFIG_INTERCOM_DOOR_GPIO_PIN);
 #else
     uin64_t mask = (1 << CONFIG_INTERCOM_RING_GPIO_PIN) | (1 << INTERCOM_DOOR_GPIO_PIN);
     esp_sleep_enable_ext1_wakeup(mask, esp_sleep_ext1_wakeup_mode_t::ESP_EXT1_WAKEUP_ANY_HIGH);
+    ESP_LOGI(main_log_tag, "EXT1 Configured to Ring pin (%d) and Door Bell pin (%d)", CONFIG_INTERCOM_RING_GPIO_PIN, CONFIG_INTERCOM_DOOR_GPIO_PIN);
 #endif
 
 #ifdef CONFIG_INTERCOM_DEEP_SLEEP_DURATION_ENABLED
@@ -233,20 +236,34 @@ extern "C" void app_main()
     }
     else if(wakeup_reason == ESP_SLEEP_WAKEUP_EXT1)
     {
-        int ring_level = gpio_get_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_RING_GPIO_PIN));
-        int door_level = gpio_get_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_DOOR_GPIO_PIN));
+        ESP_LOGI(main_log_tag, "Wake up by EXT1");
+#if CONFIG_INTERCOM_WAKE_LEVEL == 0
+        door_sensor_timestamp = esp_timer_get_time();
+        door_notification_pending = true;
+        ESP_LOGD(main_log_tag, "door_notification_pending set to true in EXT1 handler");
+#else
+        
+        uint64_t wakeup_bits = esp_sleep_get_ext1_wakeup_status();
+        if(wakeup_bits == 0)
+        {
+            ESP_LOGE(main_log_tag, "wakeup_bits is 0!");
+        }
 
-        if(ring_level == CONFIG_INTERCOM_WAKE_LEVEL)
+        if(wakeup_bits & (1 << CONFIG_INTERCOM_RING_GPIO_PIN))
         {
             ring_sensor_timestamp = esp_timer_get_time();
             ring_notification_pending = true;
+            ESP_LOGD(main_log_tag, "ring_notification_pending set to true in EXT1 handler");
         }
-
-        if(door_level == CONFIG_INTERCOM_WAKE_LEVEL)
+        
+        if(wakeup_bits & (1 << CONFIG_INTERCOM_DOOR_GPIO_PIN))
         {
             door_sensor_timestamp = esp_timer_get_time();
             door_notification_pending = true;
+            ESP_LOGD(main_log_tag, "door_notification_pending set to true in EXT1 handler");
         }
+#endif
+        
     }
     else if(wakeup_reason == ESP_SLEEP_WAKEUP_TIMER)
     {
@@ -260,7 +277,7 @@ extern "C" void app_main()
             ring_sensor_timestamp = esp_timer_get_time();
             ring_notification_pending = true;
             sensed = true;
-            ESP_LOGD(main_log_tag, "ring_notification_pending set to true");
+            ESP_LOGD(main_log_tag, "ring_notification_pending set to true by Timer wakeup handler");
         }
 
         if(door_level == CONFIG_INTERCOM_WAKE_LEVEL)
@@ -268,7 +285,7 @@ extern "C" void app_main()
             door_sensor_timestamp = esp_timer_get_time();
             door_notification_pending = true;
             sensed = true;
-            ESP_LOGD(main_log_tag, "door_notification_pending set to true");
+            ESP_LOGD(main_log_tag, "door_notification_pending set to true by Timer wakeup handler");
         }
 
         if(!sensed)
@@ -339,7 +356,7 @@ extern "C" void app_main()
                 timer_reset(CONFIG_INTERCOM_DEEP_SLEEP_DELAY);
                 ring_sensor_timestamp = timestamp;
                 ring_notification_pending = true;
-                ESP_LOGD(main_log_tag, "ring_notification_pending set to true");
+                ESP_LOGD(main_log_tag, "ring_notification_pending set to true by GPIO Interrupt");
             }
         }
 
@@ -362,7 +379,7 @@ extern "C" void app_main()
                 timer_reset(CONFIG_INTERCOM_DEEP_SLEEP_DELAY);
                 door_sensor_timestamp = timestamp;
                 door_notification_pending = true;
-                ESP_LOGD(main_log_tag, "door_notification_pending set to true");
+                ESP_LOGD(main_log_tag, "door_notification_pending set to true by GPIO Interrupt");
             }
         }
 
