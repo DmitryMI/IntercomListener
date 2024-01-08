@@ -8,6 +8,7 @@
 
 enum class led_indicator_code
 {
+    none,
     idle,
     wakeup,
     wifi_error,
@@ -21,8 +22,8 @@ private:
     static const char* log_tag;
 
     TaskHandle_t task_handle;
-    led_indicator_code current_code = led_indicator_code::idle;
-    led_indicator_code pending_code = led_indicator_code::idle;
+    led_indicator_code current_code = led_indicator_code::none;
+    led_indicator_code pending_code = led_indicator_code::none;
 public:
     led_indicator_task()
     {
@@ -82,6 +83,12 @@ private:
 
         while(true)
         {
+            if(task->pending_code == led_indicator_code::none)
+            {
+                vTaskDelay(100 / portTICK_PERIOD_MS);
+                continue;
+            }
+
             task->current_code = task->pending_code;
             task->pending_code = led_indicator_code::idle;
 
@@ -105,8 +112,9 @@ private:
                 ESP_LOGD(log_tag, "wakeup");
 #if CONFIG_INTERCOM_LED_GREEN_GPIO_PIN >= 0
                 gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_GREEN_GPIO_PIN), 1);
-                vTaskDelay(1000 / portTICK_PERIOD_MS);
-                vTaskDelay(1000 / portTICK_PERIOD_MS);
+                vTaskDelay(500 / portTICK_PERIOD_MS);
+                gpio_set_level(static_cast<gpio_num_t>(CONFIG_INTERCOM_LED_GREEN_GPIO_PIN), 0);
+                vTaskDelay(500 / portTICK_PERIOD_MS);
 #endif
                 break;
 

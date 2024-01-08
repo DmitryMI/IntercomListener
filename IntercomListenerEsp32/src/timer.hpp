@@ -43,7 +43,16 @@ bool IRAM_ATTR timer_group_isr_callback(void *args)
     return high_task_awoken == pdTRUE;
 }
 
-void timer_reset(int timer_interval_sec)
+void timer_set_alarm_interval(int timer_interval_sec)
+{
+    const auto group = timer_group_t::TIMER_GROUP_0;
+    const auto index = timer_idx_t::TIMER_0;
+    
+    const uint32_t timer_scale = rtc_clk_apb_freq_get() / TIMER_DIVIDER;
+    ESP_ERROR_CHECK(timer_set_alarm_value(group, index, timer_interval_sec * timer_scale));
+}
+
+void timer_reset(int timer_interval_sec = 0)
 {
     ESP_LOGI(timer_log_tag, "timer_reset called");
     const auto group = timer_group_t::TIMER_GROUP_0;
@@ -51,6 +60,11 @@ void timer_reset(int timer_interval_sec)
 
     ESP_ERROR_CHECK(timer_set_counter_value(group, index, 0));
     ESP_ERROR_CHECK(timer_set_alarm(group, index, TIMER_ALARM_EN));
+
+    if(timer_interval_sec != 0)
+    {
+        timer_set_alarm_interval(timer_interval_sec);
+    }
 }
 
 void timer_setup(int timer_interval_sec, EventGroupHandle_t event_group_handle)

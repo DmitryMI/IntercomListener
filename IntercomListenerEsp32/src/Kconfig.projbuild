@@ -6,7 +6,20 @@ menu "IntercomListener General"
 
     config INTERCOM_RING_GPIO_PIN
         int "Ring sensor pin"
-        default 33
+        default 27
+
+    choice INTERCOM_RING_GPIO_PIN_PULL
+        prompt "Ring sensor pull mode"
+        default INTERCOM_RING_GPIO_PIN_PULL_DISABLED
+        help
+            Enable internal pull-up or pull-down for Ring sensor pin.
+        config INTERCOM_RING_GPIO_PIN_PULL_DISABLED
+            bool "Disabled"
+        config INTERCOM_RING_GPIO_PIN_PULL_DOWN
+            bool "Pull-down"
+        config INTERCOM_RING_GPIO_PIN_PULL_UP
+            bool "Pull-up"
+    endchoice
 
     config INTERCOM_RING_DETECTION_COOLDOWN
         int "Ring detection cooldown in milliseconds"
@@ -38,8 +51,12 @@ menu "IntercomListener General"
     endchoice
 
     config INTERCOM_DEEP_SLEEP_DELAY
-        int "MCU will go to sleep if inactive during this time" 
+        int "Deep sleep delay after ring was detected" 
         default 30
+
+    config INTERCOM_DEEP_SLEEP_DELAY_SHORT
+        int "Deep sleep delay after timer wakeup" 
+        default 1
 
     config INTERCOM_DEEP_SLEEP_DURATION_ENABLED
         bool "Deep sleep auto wake up"
